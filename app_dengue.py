@@ -119,18 +119,7 @@ def cargar_modelos():
     modelos = {}
     
     # Verificar si existe modelo de Red Neuronal
-    if os.path.exists('mejor_modelo_nn.h5'):
-        try:
-            from tensorflow.keras.models import load_model
-            modelos['modelo'] = load_model('mejor_modelo_nn.h5')
-            modelos['tipo'] = 'nn'
-            modelos['nombre'] = 'Red Neuronal'
-            print("✅ Modelo Red Neuronal cargado")
-        except Exception as e:
-            st.warning(f"No se pudo cargar modelo Red Neuronal: {e}")
-            modelos['modelo'] = None
-    # Verificar si existe modelo Random Forest/Logistic
-    elif os.path.exists('mejor_modelo.pkl'):
+    if os.path.exists('mejor_modelo.pkl'):
         try:
             import joblib
             modelos['modelo'] = joblib.load('mejor_modelo.pkl')
