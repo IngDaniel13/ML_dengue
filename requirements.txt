@@ -4,7 +4,6 @@ numpy
 plotly
 scikit-learn
 imbalanced-learn
-tensorflow
 joblib
 openpyxl
 matplotlib
