@@ -25,90 +25,309 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS personalizado
-st.markdown("""
-<style>
-    /* Estilos generales */
-    .stApp {
-        background-color: #f8fafc;
-    }
-    .metric-card {
-        background: linear-gradient(135deg, #1e3a5f, #2563eb);
-        border-radius: 12px;
-        padding: 20px;
-        color: white;
-        text-align: center;
-        margin: 5px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .metric-value { font-size: 2.2rem; font-weight: bold; }
-    .metric-label { font-size: 0.9rem; opacity: 0.85; margin-top: 4px; }
-    .section-title {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #1e3a5f;
-        border-left: 4px solid #2563eb;
-        padding-left: 10px;
-        margin: 20px 0 10px 0;
-    }
-    .stTabs [data-baseweb="tab"] { 
-        font-size: 1rem; 
-        font-weight: 600;
-        padding: 8px 16px;
-    }
-    /* Tarjeta de riesgo */
-    .risk-card-low {
-        background: linear-gradient(135deg, #22c55e, #16a34a);
-        border-radius: 12px;
-        padding: 20px;
-        color: white;
-        text-align: center;
-    }
-    .risk-card-moderate {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        border-radius: 12px;
-        padding: 20px;
-        color: white;
-        text-align: center;
-    }
-    .risk-card-high {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        border-radius: 12px;
-        padding: 20px;
-        color: white;
-        text-align: center;
-    }
-    .symptom-badge {
-        background: #e2e8f0;
-        border-radius: 20px;
-        padding: 4px 12px;
-        margin: 4px;
-        display: inline-block;
-        font-size: 0.8rem;
-    }
-    .info-box {
-        background: #e6f7ff;
-        border-left: 4px solid #1890ff;
-        padding: 12px;
-        border-radius: 8px;
-        margin: 10px 0;
-    }
-    .warning-box {
-        background: #fff7e6;
-        border-left: 4px solid #faad14;
-        padding: 12px;
-        border-radius: 8px;
-        margin: 10px 0;
-    }
-    .danger-box {
-        background: #fff1f0;
-        border-left: 4px solid #f5222d;
-        padding: 12px;
-        border-radius: 8px;
-        margin: 10px 0;
-    }
-</style>
-""", unsafe_allow_html=True)
+# ──────────────────────────────────────────────────────────
+# CONFIGURACIÓN DE TEMA (DARK/LIGHT)
+# ──────────────────────────────────────────────────────────
+
+# Inicializar el tema en session_state
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"
+
+def toggle_theme():
+    """Cambia entre tema claro y oscuro"""
+    st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
+
+def get_theme_colors():
+    """Retorna los colores según el tema actual"""
+    if st.session_state.theme == "dark":
+        return {
+            "bg_color": "#0f172a",
+            "card_bg": "#1e293b",
+            "text_color": "#f1f5f9",
+            "text_secondary": "#94a3b8",
+            "border_color": "#334155",
+            "header_gradient": "linear-gradient(135deg, #0f172a, #1e1b4b)",
+            "grid_color": "rgba(128,128,128,0.2)",
+            "plot_bg": "rgba(0,0,0,0)",
+            "paper_bg": "rgba(0,0,0,0)"
+        }
+    else:
+        return {
+            "bg_color": "#f8fafc",
+            "card_bg": "#ffffff",
+            "text_color": "#1e293b",
+            "text_secondary": "#475569",
+            "border_color": "#e2e8f0",
+            "header_gradient": "linear-gradient(135deg, #1e3a5f, #2563eb)",
+            "grid_color": "#e2e8f0",
+            "plot_bg": "rgba(0,0,0,0)",
+            "paper_bg": "rgba(0,0,0,0)"
+        }
+
+# ──────────────────────────────────────────────────────────
+# CONFIGURACIÓN DE GRÁFICAS ADAPTABLES AL TEMA
+# ──────────────────────────────────────────────────────────
+def configurar_grafica_tema(fig, height=400):
+    """Configura gráficas para que se adapten al tema actual"""
+    colors = get_theme_colors()
+    
+    fig.update_layout(
+        height=height,
+        dragmode=False,
+        hovermode='closest',
+        margin=dict(l=40, r=40, t=60, b=40),
+        font=dict(size=12, color=colors["text_color"]),
+        paper_bgcolor=colors["paper_bg"],
+        plot_bgcolor=colors["plot_bg"],
+        legend=dict(
+            bgcolor='rgba(0,0,0,0)',
+            font=dict(color=colors["text_color"])
+        ),
+        title_font=dict(color=colors["text_color"]),
+        xaxis=dict(
+            title_font=dict(color=colors["text_secondary"]),
+            tickfont=dict(color=colors["text_secondary"]),
+            gridcolor=colors["grid_color"]
+        ),
+        yaxis=dict(
+            title_font=dict(color=colors["text_secondary"]),
+            tickfont=dict(color=colors["text_secondary"]),
+            gridcolor=colors["grid_color"]
+        ),
+        # Configuración para móviles
+        modebar=dict(
+            orientation='v',
+            activecolor='#2563eb',
+            add=['zoomIn2d', 'zoomOut2d', 'resetScale2d'],
+            remove=['zoom', 'pan', 'select', 'lasso', 'orbitRotation', 'tableRotation']
+        )
+    )
+    # Configurar interacciones
+    fig.update_xaxes(fixedrange=False)
+    fig.update_yaxes(fixedrange=False)
+    return fig
+
+# ──────────────────────────────────────────────────────────
+# CSS ADAPTADO AL TEMA ACTUAL
+# ──────────────────────────────────────────────────────────
+def apply_theme_css():
+    """Aplica los estilos CSS según el tema actual"""
+    colors = get_theme_colors()
+    
+    st.markdown(f"""
+    <style>
+        /* ============================================ */
+        /* ESTILOS QUE SE ADAPTAN AL TEMA SELECCIONADO */
+        /* ============================================ */
+        
+        /* Variables CSS */
+        :root {{
+            --bg-color: {colors["bg_color"]};
+            --card-bg: {colors["card_bg"]};
+            --text-color: {colors["text_color"]};
+            --text-secondary: {colors["text_secondary"]};
+            --border-color: {colors["border_color"]};
+            --header-gradient: {colors["header_gradient"]};
+        }}
+        
+        /* Aplicar variables CSS */
+        .stApp {{
+            background-color: var(--bg-color);
+        }}
+        
+        /* Forzar colores de texto en todos los elementos */
+        .stApp, .stApp * {{
+            color: var(--text-color) !important;
+        }}
+        
+        /* Excepciones para elementos que deben mantener su color */
+        .stButton button, .st-emotion-cache-1v0mbdj button {{
+            color: white !important;
+        }}
+        
+        /* Estilo específico para el botón de tema */
+        .theme-toggle-btn {{
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 999;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        
+        .theme-toggle-btn:hover {{
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }}
+        
+        /* Títulos de sección */
+        .section-title {{
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-color) !important;
+            border-left: 4px solid #2563eb;
+            padding-left: 10px;
+            margin: 20px 0 10px 0;
+        }}
+        
+        /* Tarjetas métricas */
+        .metric-card {{
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }}
+        .metric-card div:first-child {{
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-color) !important;
+        }}
+        .metric-card div:last-child {{
+            color: var(--text-secondary) !important;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }}
+        
+        /* Cajas de información */
+        .info-box {{
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid #1890ff;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }}
+        .warning-box {{
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid #faad14;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }}
+        .danger-box {{
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid #f5222d;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }}
+        
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 8px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 4px;
+            flex-wrap: wrap;
+        }}
+        .stTabs [data-baseweb="tab"] {{
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 6px;
+            color: var(--text-secondary) !important;
+            background-color: var(--bg-color);
+        }}
+        .stTabs [aria-selected="true"] {{
+            background-color: #2563eb !important;
+            color: white !important;
+        }}
+        
+        /* Header */
+        .custom-header {{
+            background: var(--header-gradient);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }}
+        .custom-header h1 {{
+            color: white !important;
+            margin: 0;
+            font-size: 2.2rem;
+        }}
+        .custom-header p {{
+            color: #bdd7f7 !important;
+            margin: 8px 0 0 0;
+            font-size: 1rem;
+        }}
+        
+        /* Tarjetas de riesgo (mantienen colores fijos por ser críticos) */
+        .risk-card-low {{
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }}
+        .risk-card-moderate {{
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }}
+        .risk-card-high {{
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }}
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {{
+            width: 8px;
+            height: 8px;
+        }}
+        ::-webkit-scrollbar-track {{
+            background: var(--bg-color);
+        }}
+        ::-webkit-scrollbar-thumb {{
+            background: #2563eb;
+            border-radius: 4px;
+        }}
+        
+        /* Ajustes para móviles */
+        @media (max-width: 768px) {{
+            .stTabs [data-baseweb="tab"] {{
+                font-size: 0.75rem;
+                padding: 6px 10px;
+            }}
+            .section-title {{
+                font-size: 1.1rem;
+            }}
+            .custom-header {{
+                padding: 20px;
+            }}
+            .custom-header h1 {{
+                font-size: 1.5rem;
+            }}
+            .custom-header p {{
+                font-size: 0.8rem;
+            }}
+            .metric-card {{
+                padding: 12px;
+            }}
+            .metric-card div:first-child {{
+                font-size: 1.3rem;
+            }}
+            .risk-card-low, .risk-card-moderate, .risk-card-high {{
+                padding: 12px;
+            }}
+        }}
+    </style>
+    """, unsafe_allow_html=True)
 
 # ──────────────────────────────────────────────────────────
 # CARGA DE DATOS Y MODELOS CON CACHÉ
@@ -119,7 +338,18 @@ def cargar_modelos():
     modelos = {}
     
     # Verificar si existe modelo de Red Neuronal
-    if os.path.exists('mejor_modelo.pkl'):
+    if os.path.exists('mejor_modelo_nn.h5'):
+        try:
+            from tensorflow.keras.models import load_model
+            modelos['modelo'] = load_model('mejor_modelo_nn.h5')
+            modelos['tipo'] = 'nn'
+            modelos['nombre'] = 'Red Neuronal'
+            print("✅ Modelo Red Neuronal cargado")
+        except Exception as e:
+            st.warning(f"No se pudo cargar modelo Red Neuronal: {e}")
+            modelos['modelo'] = None
+    # Verificar si existe modelo Random Forest/Logistic
+    elif os.path.exists('mejor_modelo.pkl'):
         try:
             import joblib
             modelos['modelo'] = joblib.load('mejor_modelo.pkl')
@@ -193,16 +423,44 @@ def cargar_datos():
 datos = cargar_datos()
 modelos = cargar_modelos()
 
+# Aplicar el CSS del tema actual
+apply_theme_css()
+
 # ──────────────────────────────────────────────────────────
-# HEADER
+# SIDEBAR CON BOTÓN DE CAMBIO DE TEMA
 # ──────────────────────────────────────────────────────────
-st.markdown("""
-<div style='background: linear-gradient(135deg,#1e3a5f,#2563eb);
-            padding:30px; border-radius:15px; margin-bottom:20px; text-align:center;'>
-    <h1 style='color:white; margin:0; font-size:2.4rem;'>🦟 Sistema de Vigilancia del Dengue</h1>
-    <p style='color:#bdd7f7; margin:8px 0 0 0; font-size:1.1rem;'>
-        Departamento del Cesar, Colombia · Análisis histórico y predicciones 2026–2030
-    </p>
+with st.sidebar:
+    st.markdown("## 🎨 Apariencia")
+    
+    # Botón de cambio de tema
+    theme_icon = "🌙" if st.session_state.theme == "light" else "☀️"
+    theme_text = "Modo Oscuro" if st.session_state.theme == "light" else "Modo Claro"
+    
+    if st.button(f"{theme_icon} {theme_text}", use_container_width=True):
+        toggle_theme()
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Mostrar información del modelo
+    st.markdown("## 🤖 Modelo Activo")
+    if modelos.get('modelo') is not None:
+        st.info(f"**Modelo:** {modelos.get('modelo_mejor', 'Desconocido')}\n\n**Threshold:** {modelos.get('threshold', 0.5)}")
+    else:
+        st.warning("No hay modelo cargado")
+    
+    st.markdown("---")
+    st.markdown("### 📊 Datos")
+    st.markdown("Fuente: Datos históricos dengue - Cesar")
+    st.markdown("Última actualización: 2025")
+
+# ──────────────────────────────────────────────────────────
+# HEADER (con clase personalizada)
+# ──────────────────────────────────────────────────────────
+st.markdown(f"""
+<div class='custom-header'>
+    <h1>🦟 Sistema De Clasificacion de Dengue</h1>
+    <p>Departamento del Cesar, Colombia · Análisis histórico y predicciones 2026–2030</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -220,7 +478,7 @@ if datos['hist_anual'] is not None:
     for col, valor, label, color in zip(
         [col1, col2, col3, col4],
         [f"{total_historico:,}", f"{total_graves:,}", f"{pct_graves}%", str(anio_pico)],
-        ["Total Casos Históricos", "Casos Dengue Grave", "% Dengue Grave", "Año con más Casos"],
+        ["Total Casos Históricos 2018-2025", "Casos Dengue Grave", "% Dengue Grave", "Año con más Casos"],
         ["#2563eb", "#dc2626", "#d97706", "#059669"]
     ):
         col.markdown(f"""
@@ -228,7 +486,7 @@ if datos['hist_anual'] is not None:
                     border:2px solid {color}; border-radius:12px;
                     padding:18px; text-align:center;'>
             <div style='font-size:2rem; font-weight:800; color:{color};'>{valor}</div>
-            <div style='color:#555; font-size:0.85rem; margin-top:4px;'>{label}</div>
+            <div style='color:var(--text-secondary); font-size:0.85rem; margin-top:4px;'>{label}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -246,7 +504,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 # ══════════════════════════════════════════════════════════
-# TAB 1: HISTÓRICO (sin cambios, mantengo tu código original)
+# TAB 1: HISTÓRICO
 # ══════════════════════════════════════════════════════════
 with tab1:
     st.markdown("<div class='section-title'>Análisis Histórico de Casos</div>", unsafe_allow_html=True)
@@ -273,12 +531,10 @@ with tab1:
             title='Evolución Anual de Casos de Dengue',
             xaxis_title='Año', yaxis_title='Número de Casos',
             legend=dict(orientation='h', yanchor='bottom', y=1.02),
-            hovermode='x unified', height=420,
-            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
+            hovermode='x unified', height=420
         )
-        fig_anual.update_xaxes(showgrid=True, gridcolor='#f0f0f0')
-        fig_anual.update_yaxes(showgrid=True, gridcolor='#f0f0f0')
-        st.plotly_chart(fig_anual, use_container_width=True)
+        fig_anual = configurar_grafica_tema(fig_anual, height=420)
+        st.plotly_chart(fig_anual, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
     col_left, col_right = st.columns(2)
 
@@ -304,10 +560,10 @@ with tab1:
             ))
             fig_sexo.update_layout(
                 title='Casos por Sexo',
-                barmode='group', height=380,
-                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
+                barmode='group', height=380
             )
-            st.plotly_chart(fig_sexo, use_container_width=True)
+            fig_sexo = configurar_grafica_tema(fig_sexo, height=380)
+            st.plotly_chart(fig_sexo, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
     # ── Gráfico 3: Por estrato ─────────────────────────────
     with col_right:
@@ -322,11 +578,9 @@ with tab1:
                 text='total_casos'
             )
             fig_est.update_traces(textposition='outside')
-            fig_est.update_layout(
-                height=380,
-                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
-            )
-            st.plotly_chart(fig_est, use_container_width=True)
+            fig_est.update_layout(height=380)
+            fig_est = configurar_grafica_tema(fig_est, height=380)
+            st.plotly_chart(fig_est, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
     # ── Gráfico 4: Distribución por edad (histogram style) ─
     if datos['hist_edad'] is not None:
@@ -356,10 +610,10 @@ with tab1:
         fig_edad.update_layout(
             title='Distribución de Casos por Rango de Edad',
             xaxis_title='Rango de Edad', yaxis_title='Casos',
-            barmode='group', height=400,
-            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
+            barmode='group', height=400
         )
-        st.plotly_chart(fig_edad, use_container_width=True)
+        fig_edad = configurar_grafica_tema(fig_edad, height=400)
+        st.plotly_chart(fig_edad, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
     # ── Gráfico 5: % graves por año ───────────────────────
     if datos['hist_anual'] is not None:
@@ -369,13 +623,12 @@ with tab1:
             labels={'pct_graves': '% Dengue Grave', 'anio': 'Año'},
             color_discrete_sequence=['#f59e0b']
         )
-        fig_pct.update_layout(height=350,
-            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig_pct, use_container_width=True)
-
+        fig_pct.update_layout(height=350)
+        fig_pct = configurar_grafica_tema(fig_pct, height=350)
+        st.plotly_chart(fig_pct, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
 # ══════════════════════════════════════════════════════════
-# TAB 2: PREDICCIONES (mejorado con más visualizaciones)
+# TAB 2: PREDICCIONES
 # ══════════════════════════════════════════════════════════
 with tab2:
     st.markdown("<div class='section-title'>Proyecciones a 5 Años (2026–2030)</div>", unsafe_allow_html=True)
@@ -430,12 +683,10 @@ with tab2:
 
         fig.update_layout(
             title_text=f"📍 {titulo} — Predicciones 5 Años",
-            height=650, showlegend=False,
-            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
+            height=650, showlegend=False
         )
-        fig.update_xaxes(showgrid=False)
-        fig.update_yaxes(showgrid=True, gridcolor='#f0f0f0')
-        st.plotly_chart(fig, use_container_width=True)
+        fig = configurar_grafica_tema(fig, height=650)
+        st.plotly_chart(fig, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
         # Tabla resumen
         st.dataframe(
@@ -484,16 +735,15 @@ with tab2:
             fig_comp.update_layout(
                 title='Comparación de Proyecciones: Cesar vs Valledupar',
                 xaxis_title='Año', yaxis_title='Casos',
-                hovermode='x unified', height=450,
-                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
+                hovermode='x unified', height=450
             )
-            st.plotly_chart(fig_comp, use_container_width=True)
+            fig_comp = configurar_grafica_tema(fig_comp, height=450)
+            st.plotly_chart(fig_comp, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
         else:
             st.warning("Faltan archivos de predicciones. Ejecuta el pipeline de Colab primero.")
 
-
 # ══════════════════════════════════════════════════════════
-# TAB 3: MÉTRICAS DEL MODELO (mejorado)
+# TAB 3: MÉTRICAS DEL MODELO
 # ══════════════════════════════════════════════════════════
 with tab3:
     st.markdown("<div class='section-title'>Rendimiento de los Modelos de ML</div>", unsafe_allow_html=True)
@@ -527,10 +777,10 @@ with tab3:
         )
         fig_met.update_traces(textposition='outside')
         fig_met.update_layout(
-            yaxis_range=[0, 1.1], height=450,
-            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
+            yaxis_range=[0, 1.1], height=450
         )
-        st.plotly_chart(fig_met, use_container_width=True)
+        fig_met = configurar_grafica_tema(fig_met, height=450)
+        st.plotly_chart(fig_met, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
 
         # Highlight mejor modelo por recall
         if 'recall' in df_met.columns:
@@ -539,9 +789,8 @@ with tab3:
     else:
         st.info("Ejecuta el pipeline de Colab para generar metricas_modelos.csv")
 
-
 # ══════════════════════════════════════════════════════════
-# TAB 4: PREDICTOR DE DENGUE (CORREGIDO)
+# TAB 4: PREDICTOR DE DENGUE
 # ══════════════════════════════════════════════════════════
 with tab4:
     st.markdown("<div class='section-title'>🩺 Predictor de Dengue - Evaluación de Riesgo</div>", unsafe_allow_html=True)
@@ -647,7 +896,6 @@ with tab4:
                 # DEBUG: Mostrar las columnas esperadas
                 if modelos['feature_columns'] is not None:
                     feature_cols = modelos['feature_columns']
-                    # st.write("Columnas esperadas por el modelo:", feature_cols[:10])  # Debug opcional
                 else:
                     st.error("No se encontraron las columnas de features")
                     st.stop()
@@ -656,8 +904,6 @@ with tab4:
                 input_dict = {col: 0 for col in feature_cols}
                 
                 # Mapear inputs del usuario a las columnas correctas
-                # IMPORTANTE: Verificar nombres exactos de las columnas
-                # Variables demográficas - VERIFICAR NOMBRES EXACTOS
                 posibles_edad = ['edad_', 'edad', 'Edad']
                 for col in posibles_edad:
                     if col in input_dict:
@@ -682,7 +928,7 @@ with tab4:
                         input_dict[col] = cod_mun
                         break
                 
-                # Variables de síntomas - usar nombres exactos
+                # Variables de síntomas
                 sintomas_map = {
                     'fiebre': fiebre,
                     'cefalea': cefalea,
@@ -707,10 +953,8 @@ with tab4:
                         input_dict[sintoma] = 1 if valor else 0
                 
                 # Variables adicionales que pueden estar presentes
-                # Establecer valores predeterminados para columnas requeridas
                 for col in feature_cols:
                     if col not in input_dict:
-                        # Variables de fecha
                         if col.startswith('fec_not_') or col.startswith('fec_con_') or col.startswith('ini_sin_'):
                             input_dict[col] = 2025
                         elif col == 'anio':
@@ -720,7 +964,6 @@ with tab4:
                         elif col in ['pac_hos_', 'tip_cas_']:
                             input_dict[col] = 0
                         else:
-                            # Otras variables, mantener 0
                             input_dict[col] = 0
                 
                 # Crear DataFrame
@@ -728,9 +971,6 @@ with tab4:
                 
                 # Asegurar que las columnas estén en el orden correcto
                 input_df = input_df[feature_cols]
-                
-                # DEBUG: Mostrar valores de entrada (opcional, quitar en producción)
-                # st.write("Valores de entrada (primeras 10):", input_df.iloc[0][:10].to_dict())
                 
                 # Escalar los datos
                 if modelos['scaler'] is not None:
@@ -752,7 +992,7 @@ with tab4:
                 st.markdown("---")
                 st.markdown("## 📊 Resultado de la Evaluación")
                 
-                # Determinar nivel de riesgo basado en probabilidad REAL
+                # Determinar nivel de riesgo
                 if proba < 0.2:
                     nivel = "BAJO"
                     nivel_color = "risk-card-low"
@@ -813,7 +1053,6 @@ with tab4:
                 # Mostrar medidor visual
                 st.markdown("#### 📊 Escala de Riesgo")
                 
-                # Crear gauge chart con la probabilidad REAL
                 fig_gauge = go.Figure(go.Indicator(
                     mode = "gauge+number",
                     value = proba * 100,
@@ -836,12 +1075,13 @@ with tab4:
                     }
                 ))
                 fig_gauge.update_layout(height=300, margin=dict(l=20, r=20, t=40, b=20))
-                st.plotly_chart(fig_gauge, use_container_width=True)
+                fig_gauge = configurar_grafica_tema(fig_gauge, height=300)
+                st.plotly_chart(fig_gauge, use_container_width=True, config={'scrollZoom': False, 'displayModeBar': True})
                 
-                # Recomendaciones - Mostrar según el nivel de riesgo
+                # Recomendaciones
                 st.markdown("#### 💊 Recomendaciones")
                 
-                # Detectar signos de alarma (síntomas graves seleccionados)
+                # Detectar signos de alarma
                 signos_alarma = []
                 if dolor_abdo:
                     signos_alarma.append("⚠️ Dolor abdominal intenso")
@@ -858,7 +1098,6 @@ with tab4:
                 if daño_organ:
                     signos_alarma.append("🚨 DAÑO ORGÁNICO - URGENCIA")
                 
-                # Mostrar signos de alarma si existen
                 if signos_alarma:
                     st.markdown("""
                     <div class='danger-box'>
@@ -869,7 +1108,6 @@ with tab4:
                     for signo in signos_alarma:
                         st.markdown(f"- {signo}")
                 
-                # Mostrar recomendación según nivel de riesgo (grave o leve)
                 if mostrar_recomendacion_leve:
                     st.markdown(f"""
                     <div class='info-box'>
@@ -893,7 +1131,7 @@ with tab4:
                     </div>
                     """, unsafe_allow_html=True)
                 
-                # Mensaje de consulta médica SIEMPRE visible
+                # Mensaje de consulta médica
                 st.markdown("""
                 <div class='info-box' style='background: #f0f9ff; border-left-color: #0891b2;'>
                     <strong>🏥 IMPORTANTE:</strong> Esta herramienta es un apoyo diagnóstico basado en modelos predictivos. 
@@ -905,5 +1143,65 @@ with tab4:
             except Exception as e:
                 st.error(f"Error al realizar la predicción: {e}")
                 st.info("Verifica que los modelos y artefactos estén correctamente cargados.")
-                # Mostrar más información para debugging
-                st.write("Detalles del error:", str(e))
+
+# ══════════════════════════════════════════════════════════
+# TAB 5: ACERCA DEL PROYECTO
+# ══════════════════════════════════════════════════════════
+with tab5:
+    st.markdown("<div class='section-title'>ℹ️ Acerca del Proyecto</div>", unsafe_allow_html=True)
+    
+    st.markdown("""
+    ### 🎯 Objetivo del Proyecto
+    
+    Este dashboard interactivo tiene como objetivo proporcionar una herramienta de análisis y predicción 
+    para los casos de dengue en el departamento del Cesar y el municipio de Valledupar, Colombia.
+    
+    ### 📊 Componentes del Dashboard
+    
+    1. **Análisis Histórico**: Visualización de datos históricos de casos de dengue desde 2018 hasta 2025,
+       incluyendo distribución por edad, sexo, estrato socioeconómico y evolución anual.
+    
+    2. **Predicciones Futuras**: Proyecciones a 5 años (2026-2030) basadas en modelos de machine learning,
+       mostrando tendencias esperadas de casos totales y casos graves.
+    
+    3. **Métricas del Modelo**: Evaluación del rendimiento de los modelos predictivos utilizados,
+       incluyendo métricas como recall, precisión, F1-score y AUC-ROC.
+    
+    4. **Predictor de Dengue**: Herramienta interactiva que permite evaluar el riesgo de dengue grave
+       basado en síntomas y características del paciente.
+    
+    ### 🤖 Modelos Utilizados
+    
+    - Redes Neuronales
+    - Random Forest
+    - XGBoost
+    - Regresión Logística
+    
+    ### 📈 Fuentes de Datos
+    
+    Los datos utilizados en este proyecto provienen de:
+    - SIVIGILA (Sistema Nacional de Vigilancia en Salud Pública)
+    - Secretarías de Salud Departamentales
+    
+    ### 🛠️ Tecnologías
+    
+    - **Frontend**: Streamlit
+    - **Visualización**: Plotly
+    - **Machine Learning**: TensorFlow, Scikit-learn
+    - **Backend**: Python
+    
+    ### 👥 Equipo
+    
+    Proyecto desarrollado como parte del análisis epidemiológico del dengue en el departamento del Cesar.
+    
+    ### 📅 Última Actualización
+    
+    Febrero 2025
+    
+    ### 📞 Contacto
+    
+    Para más información o consultas sobre el proyecto, contactar al equipo de desarrollo.
+    """)
+    
+    st.markdown("---")
+    st.markdown("**© 2025 - Sistema de Clasificación de Dengue - Cesar & Valledupar**")
